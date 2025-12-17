@@ -1,0 +1,20 @@
+{
+    "name": "evander",
+    "class": "wizard",
+    "race": "elf",
+    "size": 1,
+    "speed": 9,
+    "abilities": {
+        "str": 8,
+        "dex": 14,
+        "con": 14,
+        "int": 17,
+        "wis": 12,
+        "cha": 10
+    },
+    "color": [
+        0,
+        255,
+        0
+    ]
+}
