@@ -1,0 +1,23 @@
+{
+    "name": "test1",
+    "class": "fighter",
+    "race": "human",
+    "size": 1,
+    "speed": 9,
+    "abilities": {
+        "str": 17,
+        "dex": 12,
+        "con": 15,
+        "int": 8,
+        "wis": 10,
+        "cha": 10
+    },
+    "color": [
+        0,
+        255,
+        0
+    ],
+    "actions": 1,
+    "bonus_actions": 1,
+    "reactions": 1
+}

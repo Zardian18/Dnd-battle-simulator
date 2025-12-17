@@ -1,0 +1,23 @@
+{
+    "name": "test2",
+    "class": "barbarian",
+    "race": "elf",
+    "size": 2,
+    "speed": 12,
+    "abilities": {
+        "str": 17,
+        "dex": 10,
+        "con": 16,
+        "int": 8,
+        "wis": 10,
+        "cha": 8
+    },
+    "color": [
+        255,
+        0,
+        0
+    ],
+    "actions": 1,
+    "bonus_actions": 1,
+    "reactions": 1
+}

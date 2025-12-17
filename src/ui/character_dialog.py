@@ -6,13 +6,17 @@ class CharacterCreationDialog:
         self.result = None
         self.root = Tk()
         self.root.title("Create Character")
-        self.root.geometry("400x350")
+        self.root.geometry("400x450")
         
         self.name_var = StringVar()
         self.class_var = StringVar()
         self.race_var = StringVar()
         self.size_var = StringVar()
         self.speed_var = StringVar()
+        
+        self.actions_var = StringVar(value="1")
+        self.bonus_actions_var = StringVar(value="1")
+        self.reactions_var = StringVar(value="1")
         
         self.str_var = StringVar()
         self.dex_var = StringVar()
@@ -50,7 +54,16 @@ class CharacterCreationDialog:
         Label(self.current_window, text="Speed:").grid(row=5, column=0, pady=5, sticky='w')
         Entry(self.current_window, textvariable=self.speed_var, width=30).grid(row=5, column=1, pady=5)
         
-        Button(self.current_window, text="Next", command=self.show_page2, width=15).grid(row=6, column=1, pady=20)
+        Label(self.current_window, text="Actions:").grid(row=6, column=0, pady=5, sticky='w')
+        Entry(self.current_window, textvariable=self.actions_var, width=30).grid(row=6, column=1, pady=5)
+        
+        Label(self.current_window, text="Bonus Actions:").grid(row=7, column=0, pady=5, sticky='w')
+        Entry(self.current_window, textvariable=self.bonus_actions_var, width=30).grid(row=7, column=1, pady=5)
+        
+        Label(self.current_window, text="Reactions:").grid(row=8, column=0, pady=5, sticky='w')
+        Entry(self.current_window, textvariable=self.reactions_var, width=30).grid(row=8, column=1, pady=5)
+        
+        Button(self.current_window, text="Next", command=self.show_page2, width=15).grid(row=9, column=1, pady=20)
     
     def show_page2(self):
         try:
@@ -58,9 +71,13 @@ class CharacterCreationDialog:
                 return
             size = int(self.size_var.get())
             speed = int(self.speed_var.get())
+            actions = int(self.actions_var.get())
+            bonus_actions = int(self.bonus_actions_var.get())
+            reactions = int(self.reactions_var.get())
+            
             if size < 1 or size > 5:
                 return
-            if speed < 0:
+            if speed < 0 or actions < 0 or bonus_actions < 0 or reactions < 0:
                 return
         except ValueError:
             return
@@ -148,7 +165,10 @@ class CharacterCreationDialog:
             int(self.size_var.get()),
             int(self.speed_var.get()),
             abilities,
-            self.selected_color
+            self.selected_color,
+            int(self.actions_var.get()),
+            int(self.bonus_actions_var.get()),
+            int(self.reactions_var.get())
         )
         
         self.result.save()

@@ -5,7 +5,7 @@ DATA_DIR = "data/characters"
 os.makedirs(DATA_DIR, exist_ok=True)
 
 class Character:
-    def __init__(self, name, char_class, race, size, speed, abilities, color):
+    def __init__(self, name, char_class, race, size, speed, abilities, color, actions=1, bonus_actions=1, reactions=1):
         self.name = name
         self.char_class = char_class
         self.race = race
@@ -13,6 +13,16 @@ class Character:
         self.speed = speed
         self.abilities = abilities  # {str, dex, con, int, wis, cha}
         self.color = color
+        
+        # Action economy
+        self.max_actions = actions
+        self.max_bonus_actions = bonus_actions
+        self.max_reactions = reactions
+        
+        self.remaining_actions = actions
+        self.remaining_bonus_actions = bonus_actions
+        self.remaining_reactions = reactions
+        
         self.x = None
         self.y = None
         self.remaining_movement = speed
@@ -25,7 +35,10 @@ class Character:
             "size": self.size,
             "speed": self.speed,
             "abilities": self.abilities,
-            "color": self.color
+            "color": self.color,
+            "actions": self.max_actions,
+            "bonus_actions": self.max_bonus_actions,
+            "reactions": self.max_reactions
         }
     
     @staticmethod
@@ -37,7 +50,10 @@ class Character:
             data["size"],
             data["speed"],
             data["abilities"],
-            data["color"]
+            data["color"],
+            data.get("actions", 1),
+            data.get("bonus_actions", 1),
+            data.get("reactions", 1)
         )
     
     def save(self):
@@ -57,5 +73,34 @@ class Character:
             return []
         return [f for f in os.listdir(DATA_DIR) if f.endswith('.json')]
     
-    def reset_movement(self):
+    def reset_turn(self):
+        """Reset all resources for a new turn"""
         self.remaining_movement = self.speed
+        self.remaining_actions = self.max_actions
+        self.remaining_bonus_actions = self.max_bonus_actions
+        self.remaining_reactions = self.max_reactions
+    
+    def can_move_to(self, target_x, target_y):
+        """Check if character can move to target position based on remaining movement"""
+        if self.x is None or self.y is None:
+            return False
+        
+        # Calculate Chebyshev distance for diagonal movement
+        dx = abs(target_x - self.x)
+        dy = abs(target_y - self.y)
+        distance = max(dx, dy)  # Chebyshev distance
+        
+        return distance <= self.remaining_movement
+
+    def move_to(self, target_x, target_y):
+        """Move character to target position and deduct movement"""
+        if self.can_move_to(target_x, target_y):
+            dx = abs(target_x - self.x)
+            dy = abs(target_y - self.y)
+            distance = max(dx, dy)  # Chebyshev distance
+            
+            self.x = target_x
+            self.y = target_y
+            self.remaining_movement -= distance
+            return True
+        return False
