@@ -86,17 +86,19 @@ class GridWindow:
                     if distance > 0 and distance <= movement_range:
                         # Check if character would fit at this position
                         if x + char.size <= self.grid_width and y + char.size <= self.grid_height:
-                            # Draw highlight on the top-left cell of where character would be
-                            rect = pygame.Rect(
-                                PANEL_WIDTH + x * CELL_SIZE + 2,
-                                y * CELL_SIZE + 2,
-                                CELL_SIZE - 4,
-                                CELL_SIZE - 4
-                            )
-                            s = pygame.Surface((CELL_SIZE - 4, CELL_SIZE - 4))
-                            s.set_alpha(50)
-                            s.fill(MOVEMENT_HIGHLIGHT_COLOR)
-                            self.screen.blit(s, rect)
+                            # Check if position is not occupied by another character
+                            if not self.is_position_occupied(x, y, char.size, ignore_char=char):
+                                # Draw highlight on the top-left cell of where character would be
+                                rect = pygame.Rect(
+                                    PANEL_WIDTH + x * CELL_SIZE + 2,
+                                    y * CELL_SIZE + 2,
+                                    CELL_SIZE - 4,
+                                    CELL_SIZE - 4
+                                )
+                                s = pygame.Surface((CELL_SIZE - 4, CELL_SIZE - 4))
+                                s.set_alpha(50)
+                                s.fill(MOVEMENT_HIGHLIGHT_COLOR)
+                                self.screen.blit(s, rect)
 
     
     def draw_character(self, char):
@@ -111,11 +113,11 @@ class GridWindow:
                     )
                     pygame.draw.rect(self.screen, char.color, rect)
                     
-                    # Highlight selected character
+                    # Highlight selected character with a thicker border
                     if char == self.selected_char:
-                        pygame.draw.rect(self.screen, SELECTED_COLOR, rect, 3)
+                        pygame.draw.rect(self.screen, SELECTED_COLOR, rect, 4)  # Thicker border for selected
                     else:
-                        pygame.draw.rect(self.screen, GRID_COLOR, rect, 2)
+                        pygame.draw.rect(self.screen, (50, 50, 50), rect, 1)  # Thin border for unselected
     
     def draw_placing_preview(self):
         if self.placing_char:
@@ -123,6 +125,11 @@ class GridWindow:
             if mouse_x >= PANEL_WIDTH and mouse_y < self.grid_height * CELL_SIZE:
                 grid_x = (mouse_x - PANEL_WIDTH) // CELL_SIZE
                 grid_y = mouse_y // CELL_SIZE
+                
+                # Check if placement is valid
+                is_valid = (grid_x + self.placing_char.size <= self.grid_width and 
+                           grid_y + self.placing_char.size <= self.grid_height and
+                           not self.is_position_occupied(grid_x, grid_y, self.placing_char.size))
                 
                 for dx in range(self.placing_char.size):
                     for dy in range(self.placing_char.size):
@@ -135,7 +142,13 @@ class GridWindow:
                             )
                             s = pygame.Surface((CELL_SIZE - 4, CELL_SIZE - 4))
                             s.set_alpha(128)
-                            s.fill(self.placing_char.color)
+                            
+                            # Use different color based on validity
+                            if is_valid:
+                                s.fill(self.placing_char.color)
+                            else:
+                                s.fill((255, 100, 100))  # Red for invalid
+                            
                             self.screen.blit(s, rect)
     
     def draw_bottom_panel(self):
@@ -181,36 +194,94 @@ class GridWindow:
             
             if self.placing_char:
                 # Place new character
-                if grid_x + self.placing_char.size <= self.grid_width and grid_y + self.placing_char.size <= self.grid_height:
+                if (grid_x + self.placing_char.size <= self.grid_width and 
+                    grid_y + self.placing_char.size <= self.grid_height and
+                    not self.is_position_occupied(grid_x, grid_y, self.placing_char.size)):
+                    
                     self.placing_char.x = grid_x
                     self.placing_char.y = grid_y
                     self.characters.append(self.placing_char)
                     self.placing_char = None
+                else:
+                    print("Cannot place character: Position occupied or out of bounds")
+                    
             elif self.selected_char:
-                # Try to move selected character
-                if self.selected_char.can_move_to(grid_x, grid_y):
-                    # Check if destination is valid (character fits)
-                    if grid_x + self.selected_char.size <= self.grid_width and grid_y + self.selected_char.size <= self.grid_height:
+                # Check if we clicked on the selected character
+                clicked_char = self.get_character_at_position(grid_x, grid_y)
+                
+                if clicked_char == self.selected_char:
+                    # Clicked on the selected character again - deselect it
+                    self.selected_char = None
+                    print(f"Deselected {clicked_char.name}")
+                elif self.selected_char.can_move_to(grid_x, grid_y):
+                    # Try to move selected character to new position
+                    # Check if destination is valid
+                    if (grid_x + self.selected_char.size <= self.grid_width and 
+                        grid_y + self.selected_char.size <= self.grid_height and
+                        not self.is_position_occupied(grid_x, grid_y, self.selected_char.size, ignore_char=self.selected_char)):
+                        
                         self.selected_char.move_to(grid_x, grid_y)
                         print(f"{self.selected_char.name} moved to ({grid_x}, {grid_y})")
+                    else:
+                        print("Cannot move: Position occupied or out of bounds")
                 else:
-                    # Click outside movement range - try to select a character
-                    clicked_char = None
-                    for char in self.characters:
-                        if char.x <= grid_x < char.x + char.size and char.y <= grid_y < char.y + char.size:
-                            clicked_char = char
-                            break
-                    
+                    # Click outside movement range - try to select a different character
                     if clicked_char:
                         self.selected_char = clicked_char
                         print(f"Selected {clicked_char.name}")
+                    else:
+                        # Clicked on empty space while having a character selected - deselect it
+                        self.selected_char = None
+                        print("Deselected character (clicked empty space)")
             else:
                 # No character selected, try to select one
-                for char in self.characters:
-                    if char.x <= grid_x < char.x + char.size and char.y <= grid_y < char.y + char.size:
-                        self.selected_char = char
-                        print(f"Selected {char.name}")
-                        break
+                clicked_char = self.get_character_at_position(grid_x, grid_y)
+                if clicked_char:
+                    self.selected_char = clicked_char
+                    print(f"Selected {clicked_char.name}")
+
+    def is_position_occupied(self, x, y, size, ignore_char=None):
+        """Check if the area starting at (x,y) with given size is occupied by any character"""
+        for char in self.characters:
+            # Skip the character we're checking against (for movement)
+            if char == ignore_char:
+                continue
+            
+            # Check for overlap between rectangles
+            # If one rectangle is to the left of the other
+            if x + size <= char.x or char.x + char.size <= x:
+                continue  # No horizontal overlap
+            
+            # If one rectangle is above the other
+            if y + size <= char.y or char.y + char.size <= y:
+                continue  # No vertical overlap
+            
+            # If we get here, rectangles overlap
+            return True
+        
+        return False
+    
+    def get_character_at_position(self, x, y):
+        """Return the character at the given cell position, or None if empty"""
+        for char in self.characters:
+            if char.x <= x < char.x + char.size and char.y <= y < char.y + char.size:
+                return char
+        return None
+
+    def draw_occupied_cells(self):
+        """Draw a subtle indicator on occupied cells"""
+        for char in self.characters:
+            if char != self.selected_char:  # Don't draw on selected char
+                for dx in range(char.size):
+                    for dy in range(char.size):
+                        rect = pygame.Rect(
+                            PANEL_WIDTH + (char.x + dx) * CELL_SIZE,
+                            (char.y + dy) * CELL_SIZE,
+                            CELL_SIZE,
+                            CELL_SIZE
+                        )
+                        # Draw a subtle border or pattern
+                        pygame.draw.rect(self.screen, (50, 50, 50), rect, 1)
     
     def run(self):
         running = True
@@ -245,6 +316,7 @@ class GridWindow:
             
             # Grid and movement range
             self.draw_grid()
+            self.draw_occupied_cells()
             self.draw_movement_range()
             
             # Characters
